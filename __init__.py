@@ -33,7 +33,7 @@ class DeadlineTracker(MycroftSkill):
 
     @intent_file_handler('create.deadline.intent')
     def add_deadline(self, message):
-        name = self.get_response('deadline.name.dialog')
+        name = self.get_response('deadline.name')
         if not name:
             return
         name = name.lower()
@@ -44,20 +44,20 @@ class DeadlineTracker(MycroftSkill):
         if not deadline_details:
             return
         
-        self._deadlines[name]['detail'] = deadline_details
+        self._deadlines[name]['detail'] = str(deadline_details)
         self._write_deadline_data()
-        self.speak_dialog('created.deadline.dialog', data={'name':name})
+        self.speak_dialog('created.deadline', data={'name':name})
 
 
 
     def _get_deadline_details(self):
-        date = self.get_response('get.deadline.date.dialog')
+        date = self.get_response('get.deadline.date')
         if not date:
             return []
         date = date.lower()
         if date in 'cancel':
             return []
-        parsed_date = util.parse.extracr_datetime(date)
+        parsed_date = util.parse.extract_datetime(date)
         return parsed_date[0]
 
 
@@ -65,16 +65,17 @@ class DeadlineTracker(MycroftSkill):
     @intent_file_handler('tracker.deadline.intent')
     def list_deadline(self, message):
         if not self._deadlines:
-            self.speak_dialog('no.deadlines.dialog')
+            self.speak_dialog('no.deadlines')
             return
         number = 0
         for item in self._deadlines:
             today = datetime.date.today()
-            deadline_date = self._deadlines[item].get('detail').date()
+            deadline_date_obj = datetime.datetime.strptime(self._deadlines[item].get('detail'), '%Y-%m-%d %H:%M:%S%z')
+            deadline_date = deadline_date_obj.date()
             if (deadline_date - today).days <= 5:
                 number = number + 1
                 
-        self.speak_dialog('tracker.deadline.dialog', data={'number': number})
+        self.speak_dialog('tracker.deadline', data={'number': number})
 
     
 
