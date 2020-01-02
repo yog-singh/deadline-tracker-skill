@@ -2,6 +2,7 @@ from mycroft import MycroftSkill, intent_file_handler, util
 from collections import defaultdict
 import json
 import logging
+import datetime
 
 DEADLINE_FILE = 'deadlines.json'
 class DeadlineTracker(MycroftSkill):
@@ -28,7 +29,6 @@ class DeadlineTracker(MycroftSkill):
     def _write_deadline_data(self):
         with self.file_system.open(DEADLINE_FILE, 'w') as conf_file:
             conf_file.write(json.dumps(self._deadlines, indent=4))
-
 
 
     @intent_file_handler('create.deadline.intent')
@@ -64,11 +64,17 @@ class DeadlineTracker(MycroftSkill):
 
     @intent_file_handler('tracker.deadline.intent')
     def list_deadline(self, message):
-        number = ''
-
-        self.speak_dialog('tracker.deadline.dialog', data={
-            'number': number
-        })
+        if not self._deadlines:
+            self.speak_dialog('no.deadlines.dialog')
+            return
+        number = 0
+        for item in self._deadlines:
+            today = datetime.date.today()
+            deadline_date = self._deadlines[item].get('detail').date()
+            if (deadline_date - today).days <= 5:
+                number = number + 1
+                
+        self.speak_dialog('tracker.deadline.dialog', data={'number': number})
 
     
 
