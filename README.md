@@ -1,5 +1,5 @@
 # <img src="https://raw.githack.com/FortAwesome/Font-Awesome/master/svgs/solid/tasks.svg" card_color="#0687F5" width="50" height="50" style="vertical-align:bottom"/> Deadline Tracker
-Keep track of your deadlines
+This skill helps you to keep track of your deadlines.
 
 ## About
 

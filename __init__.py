@@ -1,7 +1,6 @@
 from mycroft import MycroftSkill, intent_file_handler, util
 from collections import defaultdict
 import json
-import logging
 import datetime
 
 DEADLINE_FILE = 'deadlines.json'
@@ -18,12 +17,12 @@ class DeadlineTracker(MycroftSkill):
             with self.file_system.open(DEADLINE_FILE, 'r') as conf_file:
                 return json.loads(conf_file.read())
         except FileNotFoundError:
-            logging.error('Deadlines file not found')
+            util.LOG.error('Deadlines file not found')
         except PermissionError:
-            logging.error('Permission denied when reading Deadlines file')
+            util.LOG.error('Permission denied when reading Deadlines file')
         except json.decoder.JSONDecodeError:
-            logging.error('Error decoding JSON file')
-        logging.info('Initializing empty dictionary')
+            util.LOG.error('Error decoding JSON file')
+        util.LOG.info('Initializing empty dictionary')
         return {}
 
     def _write_deadline_data(self):
@@ -47,7 +46,7 @@ class DeadlineTracker(MycroftSkill):
         self._deadlines[name]['detail'] = str(deadline_details)
         self._write_deadline_data()
         self.speak_dialog('created.deadline', data={'name':name})
-
+        util.LOG.info('deadline-tracker-skill: Created deadline for %s', name)
 
 
     def _get_deadline_details(self):
@@ -61,9 +60,24 @@ class DeadlineTracker(MycroftSkill):
         return parsed_date[0]
 
 
-
     @intent_file_handler('tracker.deadline.intent')
     def list_deadline(self, message):
+        if not self._deadlines:
+            self.speak_dialog('no.deadlines')
+            return
+        self.speak_dialog('These are your nearest deadlines')
+        for item in self._deadlines:
+            today = datetime.date.today()
+            deadline_date_obj = datetime.datetime.strptime(self._deadlines[item].get('detail'), '%Y-%m-%d %H:%M:%S%z')
+            deadline_date = deadline_date_obj.date()
+            if (deadline_date - today).days <= 5:
+                humanized_date = deadline_date_obj.strftime('%d %B %I %M %p')
+                self.speak_dialog('deadline.list', data = {'deadline': item, 'date': humanized_date})
+
+
+
+    @intent_file_handler('number.deadline.intent')
+    def number_of_deadline(self):
         if not self._deadlines:
             self.speak_dialog('no.deadlines')
             return
@@ -74,10 +88,15 @@ class DeadlineTracker(MycroftSkill):
             deadline_date = deadline_date_obj.date()
             if (deadline_date - today).days <= 5:
                 number = number + 1
-                
-        self.speak_dialog('tracker.deadline', data={'number': number})
+        self.speak_dialog('tracker.deadline', data = {'number': number})
 
-    
+    @intent_file_handler('delete.item.intent')
+    def delete_item(self, message):
+        item = message.data['name']
+        del(self._deadlines[item])
+        self._write_deadline_data()
+        self.speak_dialog('item.deleted', data = {'item':item})
+
 
 
 def create_skill():
