@@ -38,8 +38,9 @@ class DeadlineTracker(MycroftSkill):
             self._register_deadline(deadline)
 
     def _register_deadline(self, deadline):
-        job = self.scheduler.add_job(func=self._schedule_handler, run_date=self._deadlines[deadline].get('detail'), args=[deadline])
-        util.LOG.info('deadline-tracker-skill: Created deadline for %s with jobID: %s', name, job.id)
+        time = datetime.datetime.strptime(self._deadlines[deadline].get('detail'))
+        job = self.scheduler.add_job(func=self._schedule_handler, run_date=time, args=[deadline])
+        util.LOG.info('deadline-tracker-skill: Created deadline for %s with jobID: %s', deadline, job.id)
     
     @intent_file_handler('create.deadline.intent')
     def add_deadline(self, message):
@@ -57,8 +58,9 @@ class DeadlineTracker(MycroftSkill):
         self._deadlines[name]['detail'] = str(deadline_details)
         self._write_deadline_data()
         if (self.speak_dialog('created.deadline', data={'name':name})):
-            job = self.scheduler.add_job(func=self._schedule_handler, run_date=self._deadlines[name].get('detail'), args=[name])
-        util.LOG.info('deadline-tracker-skill: Created deadline for %s with jobID: %s', name, job.id)
+            time = datetime.datetime.strptime(self._deadlines[name].get('detail'))
+            job = self.scheduler.add_job(func=self._schedule_handler, run_date=time, args=[name])
+            util.LOG.info('deadline-tracker-skill: Created deadline for %s with jobID: %s', name, job.id)
         
     def _get_deadline_details(self):
         date = self.get_response('get.deadline.date')
